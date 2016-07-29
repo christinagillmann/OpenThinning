@@ -38,7 +38,7 @@ int main()
 	std::cout << "Reading lookup table" << std::endl;
 
 	LookupTable lookupTable;
-	if( !lookupTable.readFile( "../../Data/LookupTables/Thinning.bin"               ) )
+	if( !lookupTable.readFile( "../../Data/LookupTables/Thinning_Simple.bin"        ) )
 		return -2;
 //	if( !lookupTable.readFile( "../../Data/LookupTables/Thinning_MedialAxis.bin"    ) )
 //		return -2;
