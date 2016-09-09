@@ -4,8 +4,9 @@
 #include <deque>
 
 #include <vtkImageReader.h>
-#include <vtkPNGReader.h>
 #include <vtkImageWriter.h>
+#include <vtkPNGReader.h>
+#include <vtkPNGWriter.h>
 #include <vtkGPUVolumeRayCastMapper.h>
 #include <vtkFixedPointVolumeRayCastMapper.h>
 #include <vtkVolumeTextureMapper2D.h>
@@ -14,12 +15,6 @@
 #include <vtkVolume.h>
 #include <vtkVolumeProperty.h>
 
-
-// +------------------------------------------------------------------------------------------+
-// |                                                                                          |
-// |  Comment/uncomment the typedefs below to use different methods for the volume rendering  |
-// |                                                                                          |
-// +------------------------------------------------------------------------------------------+
 
 //typedef vtkGPUVolumeRayCastMapper        VolumeMapper;
 typedef vtkFixedPointVolumeRayCastMapper VolumeMapper;
@@ -74,8 +69,8 @@ void Volume::createHollowCube( int _sizeX, int _sizeY, int _sizeZ, double _radiu
 }
 
 
-// Read a raw file.
-// Convert the voxel values in that file to either 0 or 1 by comparing them to the given threshold.
+// Read the volume from a raw file.
+// Convert the voxel values to either 0 or 1 by comparing them to the given threshold.
 bool Volume::readRAWFile( const std::string &_filename, int _sizeX, int _sizeY, int _sizeZ, double _threshold )
 {
 	auto imageReader = vtkSmartPointer<vtkImageReader>::New();
@@ -94,9 +89,9 @@ bool Volume::readRAWFile( const std::string &_filename, int _sizeX, int _sizeY, 
 }
 
 
-// Read a png file.
-// Convert the voxel values in that file to either 0 or 1 by comparing them to the given threshold.
-bool Volume::readPNGFile( const std::string &_filenamePattern, int _sizeX, int _sizeY, int _sizeZ, double _threshold )
+// Read the volume from png files, one file for each slice on the Z axis.
+// Convert the voxel values to either 0 or 1 by comparing them to the given threshold.
+bool Volume::readPNGFiles( const std::string &_filenamePattern, int _sizeX, int _sizeY, int _sizeZ, double _threshold )
 {
 	auto pngReader = vtkSmartPointer<vtkPNGReader>::New();
 	pngReader->SetFilePattern( _filenamePattern.c_str() );
@@ -112,15 +107,16 @@ bool Volume::readPNGFile( const std::string &_filenamePattern, int _sizeX, int _
 }
 
 
-// Write a vtk volume file.
-// All voxel values in that file will be either 0 or 1.
-bool Volume::writeVTKFile( const std::string &_filename ) const
+// Write the volume to a raw file.
+// All voxel values in that file will be set to either 0 or 255.
+bool Volume::writeRAWFile( const std::string &_filename ) const
 {
 	auto imageData = vtkSmartPointer<vtkImageData>::New();
-	copyVolumeDataToImageData( imageData );
+	copyVolumeDataToImageData( imageData, 255.0 );
 
 	auto imageWriter = vtkSmartPointer<vtkImageWriter>::New();
 	imageWriter->SetFileName( _filename.c_str() );
+	imageWriter->SetFileDimensionality( 3 );
 	imageWriter->SetInputData( imageData );
 	imageWriter->Write();
 
@@ -128,8 +124,24 @@ bool Volume::writeVTKFile( const std::string &_filename ) const
 }
 
 
+// Write the volume to png files, one file for each slice on the Z axis.
+// All voxel values in that file will be set to either 0 or 255.
+bool Volume::writePNGFiles( const std::string &_filenamePattern ) const
+{
+	auto imageData = vtkSmartPointer<vtkImageData>::New();
+	copyVolumeDataToImageData( imageData, 255.0);
+
+	auto pngWriter = vtkSmartPointer<vtkPNGWriter>::New();
+	pngWriter->SetFilePattern( _filenamePattern.c_str() );
+	pngWriter->SetInputData( imageData );
+	pngWriter->Write();
+
+	return true;
+}
+
+
 // Copy the voxels from the given image data to the stored volume data.
-// Convert the voxel values in that file to either 0 or 1 by comparing them to the given threshold.
+// Convert the voxel values to either 0 or 1 by comparing them to the given threshold.
 bool Volume::copyImageDataToVolumeData( vtkImageData *_imageData, int _sizeX, int _sizeY, int _sizeZ, double _threshold )
 {
 	if( !_imageData )
@@ -165,9 +177,8 @@ bool Volume::copyImageDataToVolumeData( vtkImageData *_imageData, int _sizeX, in
 }
 
 
-// Copy the stored volume data to the given image data.
-// The image data's voxels will also be set to either 0 or 1.
-void Volume::copyVolumeDataToImageData( vtkImageData *_imageData ) const
+// Copy the stored volume data to the given image data
+void Volume::copyVolumeDataToImageData( vtkImageData *_imageData, double _scale ) const
 {
 	if( !_imageData )
 		return;
@@ -188,7 +199,7 @@ void Volume::copyVolumeDataToImageData( vtkImageData *_imageData ) const
 			{
 				auto voxel = m_volumeData.getVoxel( x, y, z );
 
-				_imageData->SetScalarComponentFromDouble( x, y, z, 0, voxel );
+				_imageData->SetScalarComponentFromDouble( x, y, z, 0, _scale * voxel );
 			}
 		}
 	}
