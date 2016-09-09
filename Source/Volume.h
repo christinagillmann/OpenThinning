@@ -23,13 +23,15 @@ class Volume
 		void createBoxCross  ( int _sizeX, int _sizeY, int _sizeZ );
 		void createHollowCube( int _sizeX, int _sizeY, int _sizeZ, double _radius );
 
-		// Read the volume data from a file.
-		// Voxels set to either 0 or 1 are achieved by comparing the voxel values from the file to the given threshold.
-		bool readRAWFile( const std::string &_filename       , int _sizeX, int _sizeY, int _sizeZ, double _threshold );
-		bool readPNGFile( const std::string &_filenamePattern, int _sizeX, int _sizeY, int _sizeZ, double _threshold );
+		// Read the volume data from file(s).
+		// Voxels are set to either 0 or 1 by comparing the voxel values from the file to the given threshold.
+		bool readRAWFile ( const std::string &_filename       , int _sizeX, int _sizeY, int _sizeZ, double _threshold );
+		bool readPNGFiles( const std::string &_filenamePattern, int _sizeX, int _sizeY, int _sizeZ, double _threshold );
 
-		// Write the volume data to a file
-		bool writeVTKFile( const std::string &_filename ) const;
+		// Write the volume data to file(s).
+		// All voxel values in that file will be set to either 0 or 255.
+		bool writeRAWFile ( const std::string &_filename        ) const;
+		bool writePNGFiles( const std::string &_filenamePattern ) const;
 
 		// Perform the actual thinning with the help of the given lookup table
 		void performThinning( const LookupTable &_lookupTable );
@@ -40,7 +42,7 @@ class Volume
 	private:
 		// Copy the data between the given image data and the stored volume data
 		bool copyImageDataToVolumeData( vtkImageData *_imageData, int _sizeX, int _sizeY, int _sizeZ, double _threshold );
-		void copyVolumeDataToImageData( vtkImageData *_imageData ) const;
+		void copyVolumeDataToImageData( vtkImageData *_imageData, double _scale = 1.0 ) const;
 
 		// Get the 3x3x3 neighborhood of voxels around the given voxel position
 		void getNeighborhood( int _x, int _y, int _z, VolumeData::Voxel _neighborhood[27] ) const;
